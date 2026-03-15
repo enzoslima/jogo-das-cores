@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Genius - Jogo de Memória</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            text-shadow: 0 0 20px rgba(255,255,255,0.3);
+        }
+
+        .score-container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .score-box {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 25px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .score-box span {
+            color: #aaa;
+            font-size: 0.8rem;
+            display: block;
+        }
+
+        .score-box strong {
+            color: #fff;
+            font-size: 1.5rem;
+        }
+
+        .game-container {
+            position: relative;
+            width: min(90vw, 400px);
+            height: min(90vw, 400px);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 8px;
+            padding: 8px;
+            background: #2d2d2d;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 30px rgba(0,0,0,0.5),
+                inset 0 0 30px rgba(0,0,0,0.3);
+        }
+
+        .color-btn {
+            border: none;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-btn:disabled {
+            cursor: not-allowed;
+        }
+
+        .color-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        #green {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            border-radius: 100% 10px 10px 10px;
+        }
+
+        #green.active, #green:active:not(:disabled) {
+            background: linear-gradient(135deg, #58d68d 0%, #2ecc71 100%);
+            box-shadow: 0 0 40px #2ecc71, inset 0 0 30px rgba(255,255,255,0.3);
+            transform: scale(0.98);
+        }
+
+        #red {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            border-radius: 10px 100% 10px 10px;
+        }
+
+        #red.active, #red:active:not(:disabled) {
+            background: linear-gradient(135deg, #ec7063 0%, #e74c3c 100%);
+            box-shadow: 0 0 40px #e74c3c, inset 0 0 30px rgba(255,255,255,0.3);
+            transform: scale(0.98);
+        }
+
+        #yellow {
+            background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+            border-radius: 10px 10px 10px 100%;
+        }
+
+        #yellow.active, #yellow:active:not(:disabled) {
+            background: linear-gradient(135deg, #f4d03f 0%, #f1c40f 100%);
+            box-shadow: 0 0 40px #f1c40f, inset 0 0 30px rgba(255,255,255,0.3);
+            transform: scale(0.98);
+        }
+
+        #blue {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border-radius: 10px 10px 100% 10px;
+        }
+
+        #blue.active, #blue:active:not(:disabled) {
+            background: linear-gradient(135deg, #5dade2 0%, #3498db 100%);
+            box-shadow: 0 0 40px #3498db, inset 0 0 30px rgba(255,255,255,0.3);
+            transform: scale(0.98);
+        }
+
+        .center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30%;
+            height: 30%;
+            background: linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            box-shadow: 
+                0 5px 20px rgba(0,0,0,0.5),
+                inset 0 -5px 20px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .center-circle span {
+            color: #fff;
+            font-size: clamp(0.6rem, 2vw, 0.9rem);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-container {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .game-btn {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #startBtn {
+            background: linear-gradient(135deg, #00b894 0%, #00a388 100%);
+            color: white;
+            box-shadow: 0 5px 20px rgba(0,184,148,0.4);
+        }
+
+        #startBtn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,184,148,0.5);
+        }
+
+        #startBtn:active {
+            transform: translateY(0);
+        }
+
+        .message {
+            margin-top: 20px;
+            color: #fff;
+            font-size: 1.2rem;
+            text-align: center;
+            min-height: 30px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .message.error {
+            background: rgba(231, 76, 60, 0.3);
+            animation: shake 0.5s ease;
+        }
+
+        .message.success {
+            background: rgba(46, 204, 113, 0.3);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        /* Difficulty Selection */
+        .difficulty-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .difficulty-btn {
+            padding: 8px 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            background: transparent;
+            color: #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .difficulty-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .difficulty-btn.active {
+            background: rgba(255,255,255,0.2);
+            border-color: #fff;
+        }
+
+        /* Sound toggle */
+        .sound-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .sound-toggle:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .game-container {
+                gap: 6px;
+                padding: 6px;
+            }
+
+            .score-container {
+                gap: 15px;
+            }
+
+            .score-box {
+                padding: 8px 15px;
+            }
+
+            .game-btn {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Prevent text selection on mobile */
+        .game-container, .color-btn {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Instructions */
+        .instructions {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 15px;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+    <button class="sound-toggle" id="soundToggle" title="Som">🔊</button>
+    
+    <h1>🧠 Genius</h1>
+    
+    <div class="score-container">
+        <div class="score-box">
+            <span>Pontuação</span>
+            <strong id="score">0</strong>
+        </div>
+        <div class="score-box">
+            <span>Recorde</span>
+            <strong id="highScore">0</strong>
+        </div>
+    </div>
+
+    <div class="difficulty-container">
+        <button class="difficulty-btn active" data-speed="1000">Fácil</button>
+        <button class="difficulty-btn" data-speed="600">Médio</button>
+        <button class="difficulty-btn" data-speed="350">Difícil</button>
+    </div>
+
+    <div class="game-container">
+        <button class="color-btn" id="green" disabled></button>
+        <button class="color-btn" id="red" disabled></button>
+        <button class="color-btn" id="yellow" disabled></button>
+        <button class="color-btn" id="blue" disabled></button>
+        <div class="center-circle">
+            <span>Genius</span>
+        </div>
+    </div>
+
+    <div class="btn-container">
+        <button class="game-btn" id="startBtn">Iniciar</button>
+    </div>
+
+    <div class="message" id="message">Pressione Iniciar para jogar!</div>
+
+    <p class="instructions">
+        Memorize a sequência de cores e repita na mesma ordem. 
+        A cada rodada, uma nova cor é adicionada!
+    </p>
+
+    <script>
+        // Game Elements
+        const colorButtons = {
+            green: document.getElementById('green'),
+            red: document.getElementById('red'),
+            yellow: document.getElementById('yellow'),
+            blue: document.getElementById('blue')
+        };
+        const startBtn = document.getElementById('startBtn');
+        const messageEl = document.getElementById('message');
+        const scoreEl = document.getElementById('score');
+        const highScoreEl = document.getElementById('highScore');
+        const soundToggle = document.getElementById('soundToggle');
+        const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+
+        // Game State
+        let sequence = [];
+        let playerSequence = [];
+        let isPlaying = false;
+        let isShowingSequence = false;
+        let score = 0;
+        let highScore = localStorage.getItem('geniusHighScore') || 0;
+        let soundEnabled = true;
+        let gameSpeed = 1000;
+
+        // Audio Context for sounds
+        let audioContext;
+
+        // Frequencies for each color (musical notes)
+        const frequencies = {
+            green: 329.63,  // E4
+            red: 261.63,    // C4
+            yellow: 220.00, // A3
+            blue: 164.81    // E3
+        };
+
+        // Initialize
+        highScoreEl.textContent = highScore;
+
+        // Sound Functions
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playTone(color, duration = 300) {
+            if (!soundEnabled) return;
+            
+            initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = frequencies[color];
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration / 1000);
+        }
+
+        function playErrorSound() {
+            if (!soundEnabled) return;
+            
+            initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.value = 100;
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        // Game Functions
+        function startGame() {
+            sequence = [];
+            playerSequence = [];
+            score = 0;
+            scoreEl.textContent = score;
+            isPlaying = true;
+            startBtn.textContent = 'Jogando...';
+            startBtn.disabled = true;
+            addToSequence();
+        }
+
+        function addToSequence() {
+            const colors = ['green', 'red', 'yellow', 'blue'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            sequence.push(randomColor);
+            playerSequence = [];
+            
+            showMessage(`Rodada ${sequence.length} - Observe!`, '');
+            
+            setTimeout(() => {
+                showSequence();
+            }, 500);
+        }
+
+        function showSequence() {
+            isShowingSequence = true;
+            disableButtons();
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= sequence.length) {
+                    clearInterval(interval);
+                    isShowingSequence = false;
+                    enableButtons();
+                    showMessage('Sua vez! Repita a sequência', '');
+                    return;
+                }
+                
+                activateColor(sequence[i]);
+                i++;
+            }, gameSpeed);
+        }
+
+        function activateColor(color) {
+            const btn = colorButtons[color];
+            btn.classList.add('active');
+            playTone(color, gameSpeed * 0.6);
+            
+            setTimeout(() => {
+                btn.classList.remove('active');
+            }, gameSpeed * 0.7);
+        }
+
+        function handleColorClick(color) {
+            if (!isPlaying || isShowingSequence) return;
+            
+            // Visual feedback
+            colorButtons[color].classList.add('active');
+            playTone(color, 200);
+            
+            setTimeout(() => {
+                colorButtons[color].classList.remove('active');
+            }, 200);
+            
+            playerSequence.push(color);
+            
+            // Check if correct
+            const currentIndex = playerSequence.length - 1;
+            
+            if (playerSequence[currentIndex] !== sequence[currentIndex]) {
+                gameOver();
+                return;
+            }
+            
+            // Check if sequence complete
+            if (playerSequence.length === sequence.length) {
+                score = sequence.length;
+                scoreEl.textContent = score;
+                
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreEl.textContent = highScore;
+                    localStorage.setItem('geniusHighScore', highScore);
+                    showMessage('🎉 Novo Recorde! Próxima rodada...', 'success');
+                } else {
+                    showMessage('✓ Correto! Próxima rodada...', 'success');
+                }
+                
+                disableButtons();
+                
+                setTimeout(() => {
+                    addToSequence();
+                }, 1500);
+            }
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            playErrorSound();
+            
+            // Flash all buttons
+            Object.values(colorButtons).forEach(btn => {
+                btn.classList.add('active');
+            });
+            
+            setTimeout(() => {
+                Object.values(colorButtons).forEach(btn => {
+                    btn.classList.remove('active');
+                });
+            }, 500);
+            
+            showMessage(`❌ Errou! Pontuação: ${score}`, 'error');
+            
+            startBtn.textContent = 'Jogar Novamente';
+            startBtn.disabled = false;
+            disableButtons();
+        }
+
+        function showMessage(text, type) {
+            messageEl.textContent = text;
+            messageEl.className = 'message';
+            if (type) {
+                messageEl.classList.add(type);
+            }
+        }
+
+        function enableButtons() {
+            Object.values(colorButtons).forEach(btn => {
+                btn.disabled = false;
+            });
+        }
+
+        function disableButtons() {
+            Object.values(colorButtons).forEach(btn => {
+                btn.disabled = true;
+            });
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', () => {
+            initAudio();
+            startGame();
+        });
+
+        Object.entries(colorButtons).forEach(([color, btn]) => {
+            // Mouse events
+            btn.addEventListener('click', () => handleColorClick(color));
+            
+            // Touch events for better mobile support
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!btn.disabled) {
+                    handleColorClick(color);
+                }
+            });
+        });
+
+        // Sound toggle
+        soundToggle.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+        });
+
+        // Difficulty selection
+        difficultyBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (isPlaying) return;
+                
+                difficultyBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                gameSpeed = parseInt(btn.dataset.speed);
+            });
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (!isPlaying || isShowingSequence) return;
+            
+            const keyMap = {
+                'q': 'green',
+                'w': 'red',
+                'a': 'yellow',
+                's': 'blue',
+                'ArrowUp': 'green',
+                'ArrowRight': 'red',
+                'ArrowLeft': 'yellow',
+                'ArrowDown': 'blue'
+            };
+            
+            if (keyMap[e.key]) {
+                e.preventDefault();
+                handleColorClick(keyMap[e.key]);
+            }
+        });
+
+        // Prevent double-tap zoom on mobile
+        document.addEventListener('touchend', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Space to start
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !isPlaying) {
+                e.preventDefault();
+                startBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
